@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 #ifdef PI
 	wiringPiSetup();
 	pinMode(CTS_PIN, INPUT);
+	pullUpDnControl(CTS_PIN, PUD_DOWN);
 #endif
 
 	printf("starting application\n");

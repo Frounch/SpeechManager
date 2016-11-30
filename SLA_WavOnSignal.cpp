@@ -5,7 +5,7 @@
 // Copyright   : ConnectCom
 // Description : Hello World in C++, Ansi-style
 //============================================================================
-
+#define _USE_JACK
 #include <iostream>
 
 #include <iostream>
@@ -53,19 +53,28 @@ void readCTS()
 
 void recordWav()
 {
+#ifdef _USE_JACK
+	system("jack_capture -c 1 -b 16 -d 5 rec.wav");
+#else
 #ifdef PI
 	system("arecord -D plughw:1 -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #else
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #endif
+#endif
 }
 
 void playWav()
 {
+#ifdef _USE_JACK
+	system("mcp -l ref.wav");
+	sleep(5000);
+#else
 #ifdef PI
 	system("aplay -D plughw:1,0 -d5 ref.wav");
 #else
 	system("aplay -d5 ref.wav");
+#endif
 #endif
 }
 

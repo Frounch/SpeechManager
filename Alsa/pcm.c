@@ -23,9 +23,8 @@ static int period_event = 0;                            /* produce poll event af
 static snd_pcm_sframes_t buffer_size;
 static snd_pcm_sframes_t period_size;
 static snd_output_t *output = NULL;
-static void generate_sine(const snd_pcm_channel_area_t *areas, 
-snd_pcm_uframes_t offset,
-int count, double *_phase)
+
+static void generate_sine(const snd_pcm_channel_area_t *areas,  snd_pcm_uframes_t offset, int count, double *_phase)
 {
 	static double max_phase = 2. * M_PI;
 	double phase = *_phase;
@@ -175,7 +174,8 @@ static int set_swparams(snd_pcm_t *handle, snd_pcm_sw_params_t *swparams)
 	}
 	/* start the transfer when the buffer is almost full: */
 	/* (buffer_size / avail_min) * avail_min */
-	err = snd_pcm_sw_params_set_start_threshold(handle, swparams, (buffer_size / period_size) * period_size);
+	//err = snd_pcm_sw_params_set_start_threshold(handle, swparams, (buffer_size / period_size) * period_size);
+	err = snd_pcm_sw_params_set_start_threshold(handle, swparams, 0U);
 	if (err < 0) {
 		printf("Unable to set start threshold mode for playback: %s\n", snd_strerror(err));
 		return err;
@@ -407,7 +407,8 @@ static int async_loop(snd_pcm_t *handle, signed short *samples, snd_pcm_channel_
 			exit(EXIT_FAILURE);
 		}
 	}
-	if (snd_pcm_state(handle) == SND_PCM_STATE_PREPARED) {
+	if (snd_pcm_state(handle) == SND_PCM_STATE_PREPARED) 
+	{
 		err = snd_pcm_start(handle);
 		if (err < 0) {
 			printf("Start error: %s\n", snd_strerror(err));
@@ -435,49 +436,63 @@ static void async_direct_callback(snd_async_handler_t *ahandler)
 	
 	while (1) {
 		state = snd_pcm_state(handle);
-		if (state == SND_PCM_STATE_XRUN) {
+		if (state == SND_PCM_STATE_XRUN) 
+		{
 			err = xrun_recovery(handle, -EPIPE);
 			if (err < 0) {
 				printf("XRUN recovery failed: %s\n", snd_strerror(err));
 				exit(EXIT_FAILURE);
 			}
 			first = 1;
-		} else if (state == SND_PCM_STATE_SUSPENDED) {
+		} 
+		else if (state == SND_PCM_STATE_SUSPENDED) 
+		{
 			err = xrun_recovery(handle, -ESTRPIPE);
 			if (err < 0) {
 				printf("SUSPEND recovery failed: %s\n", snd_strerror(err));
 				exit(EXIT_FAILURE);
 			}
 		}
+		
 		avail = snd_pcm_avail_update(handle);
-		if (avail < 0) {
+		if (avail < 0) 
+		{
 			err = xrun_recovery(handle, avail);
-			if (err < 0) {
+			if (err < 0) 
+			{
 				printf("avail update failed: %s\n", snd_strerror(err));
 				exit(EXIT_FAILURE);
 			}
 			first = 1;
 			continue;
 		}
-		if (avail < period_size) {
-			if (first) {
+		
+		if (avail < period_size) 
+		{
+			if (first) 
+			{
 				first = 0;
 				err = snd_pcm_start(handle);
-				if (err < 0) {
+				if (err < 0)
+				{
 					printf("Start error: %s\n", snd_strerror(err));
 					exit(EXIT_FAILURE);
 				}
-			} else {
+			} else 
+			{
 				break;
 			}
 			continue;
 		}
 		size = period_size;
-		while (size > 0) {
+		while (size > 0) 
+		{
 			frames = size;
 			err = snd_pcm_mmap_begin(handle, &my_areas, &offset, &frames);
-			if (err < 0) {
-				if ((err = xrun_recovery(handle, err)) < 0) {
+			if (err < 0) 
+			{
+				if ((err = xrun_recovery(handle, err)) < 0)
+				{
 					printf("MMAP begin avail error: %s\n", snd_strerror(err));
 					exit(EXIT_FAILURE);
 				}
@@ -485,8 +500,10 @@ static void async_direct_callback(snd_async_handler_t *ahandler)
 			}
 			generate_sine(my_areas, offset, frames, &data->phase);
 			commitres = snd_pcm_mmap_commit(handle, offset, frames);
-			if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames) {
-				if ((err = xrun_recovery(handle, commitres >= 0 ? -EPIPE : commitres)) < 0) {
+			if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames) 
+			{
+				if ((err = xrun_recovery(handle, commitres >= 0 ? -EPIPE : commitres)) < 0) 
+				{
 					printf("MMAP commit error: %s\n", snd_strerror(err));
 					exit(EXIT_FAILURE);
 				}
@@ -735,42 +752,51 @@ int main(int argc, char *argv[])
 	snd_pcm_hw_params_alloca(&hwparams);
 	snd_pcm_sw_params_alloca(&swparams);
 	morehelp = 0;
-	while (1) {
+	while (1) 
+	{
 		int c;
 		if ((c = getopt_long(argc, argv, "hD:r:c:f:b:p:m:o:vne", long_option, NULL)) < 0)
 		break;
-		switch (c) {
+		switch (c) 
+		{
 		case 'h':
 			morehelp++;
 			break;
+			
 		case 'D':
 			device = strdup(optarg);
 			break;
+		
 		case 'r':
 			rate = atoi(optarg);
 			rate = rate < 4000 ? 4000 : rate;
 			rate = rate > 196000 ? 196000 : rate;
 			break;
+		
 		case 'c':
 			channels = atoi(optarg);
 			channels = channels < 1 ? 1 : channels;
 			channels = channels > 1024 ? 1024 : channels;
 			break;
+		
 		case 'f':
 			freq = atoi(optarg);
 			freq = freq < 50 ? 50 : freq;
 			freq = freq > 5000 ? 5000 : freq;
 			break;
+		
 		case 'b':
 			buffer_time = atoi(optarg);
 			buffer_time = buffer_time < 1000 ? 1000 : buffer_time;
 			buffer_time = buffer_time > 1000000 ? 1000000 : buffer_time;
 			break;
+		
 		case 'p':
 			period_time = atoi(optarg);
 			period_time = period_time < 1000 ? 1000 : period_time;
 			period_time = period_time > 1000000 ? 1000000 : period_time;
 			break;
+		
 		case 'm':
 			for (method = 0; transfer_methods[method].name; method++)
 			if (!strcasecmp(transfer_methods[method].name, optarg))
@@ -778,83 +804,118 @@ int main(int argc, char *argv[])
 			if (transfer_methods[method].name == NULL)
 			method = 0;
 			break;
+		
 		case 'o':
-			for (format = 0; format < SND_PCM_FORMAT_LAST; format++) {
+			for (format = 0; format < SND_PCM_FORMAT_LAST; format++) 
+			{
 				const char *format_name = snd_pcm_format_name(format);
 				if (format_name)
 				if (!strcasecmp(format_name, optarg))
 				break;
 			}
+			
 			if (format == SND_PCM_FORMAT_LAST)
-			format = SND_PCM_FORMAT_S16;
-			if (!snd_pcm_format_linear(format) &&
-					!(format == SND_PCM_FORMAT_FLOAT_LE ||
-						format == SND_PCM_FORMAT_FLOAT_BE)) {
-				printf("Invalid (non-linear/float) format %s\n",
-				optarg);
+			{
+				format = SND_PCM_FORMAT_S16;
+			}
+			
+			if (!snd_pcm_format_linear(format) && !(format == SND_PCM_FORMAT_FLOAT_LE || format == SND_PCM_FORMAT_FLOAT_BE)) 
+			{
+				printf("Invalid (non-linear/float) format %s\n", optarg);
 				return 1;
 			}
 			break;
+			
 		case 'v':
 			verbose = 1;
 			break;
+		
 		case 'n':
 			resample = 0;
 			break;
+		
 		case 'e':
 			period_event = 1;
 			break;
 		}
 	}
-	if (morehelp) {
+	
+	if (morehelp) 
+	{
 		help();
 		return 0;
 	}
+	
+	// Creates a new output object using an existing stdio FILE pointer
 	err = snd_output_stdio_attach(&output, stdout, 0);
-	if (err < 0) {
+	
+	if (err < 0)
+	{
 		printf("Output failed: %s\n", snd_strerror(err));
 		return 0;
 	}
+	
 	printf("Playback device is %s\n", device);
 	printf("Stream parameters are %iHz, %s, %i channels\n", rate, snd_pcm_format_name(format), channels);
 	printf("Sine wave rate is %.4fHz\n", freq);
 	printf("Using transfer method: %s\n", transfer_methods[method].name);
+	
+	// Opens playback PCM
 	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 		printf("Playback open error: %s\n", snd_strerror(err));
 		return 0;
 	}
 	
+	// Set tranfert method
 	if ((err = set_hwparams(handle, hwparams, transfer_methods[method].access)) < 0) {
 		printf("Setting of hwparams failed: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
+	
+	// Set software parameters such as sample rate
 	if ((err = set_swparams(handle, swparams)) < 0) {
 		printf("Setting of swparams failed: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
+
+	// Display logs
 	if (verbose > 0)
-	snd_pcm_dump(handle, output);
+	{
+		snd_pcm_dump(handle, output);
+	
+	}
+	
+	// Allocate memory
 	samples = malloc((period_size * channels * snd_pcm_format_physical_width(format)) / 8);
-	if (samples == NULL) {
+	if (samples == NULL)
+	{
 		printf("No enough memory\n");
 		exit(EXIT_FAILURE);
 	}
 	
+	// Allocates an n-channel array and initializes all its bits to zero.
 	areas = calloc(channels, sizeof(snd_pcm_channel_area_t));
 	if (areas == NULL) {
 		printf("No enough memory\n");
 		exit(EXIT_FAILURE);
 	}
+	
 	for (chn = 0; chn < channels; chn++) {
 		areas[chn].addr = samples;
 		areas[chn].first = chn * snd_pcm_format_physical_width(format);
 		areas[chn].step = channels * snd_pcm_format_physical_width(format);
 	}
+	
+	// Play sound
 	err = transfer_methods[method].transfer_loop(handle, samples, areas);
 	if (err < 0)
 	printf("Transfer failed: %s\n", snd_strerror(err));
+	
+	// Free memory alloc
 	free(areas);
 	free(samples);
+	
+	// Close pcm
 	snd_pcm_close(handle);
 	return 0;
 }

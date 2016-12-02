@@ -7,7 +7,7 @@
 #include <sched.h>
 #include <errno.h>
 #include <getopt.h>
-#include "../include/asoundlib.h"
+#include <alsa/asoundlib.h>
 #include <sys/time.h>
 #include <math.h>
 static char *device = "plughw:0,0";                     /* playback device */

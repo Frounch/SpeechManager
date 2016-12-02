@@ -17,6 +17,7 @@
 #include <atomic>
 #include <thread>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __arm__
 #define PI
@@ -30,6 +31,26 @@
 using namespace std;
 
 atomic<bool> CTS;
+std::string prefix;
+std::string wav(".wav");
+int count = 0;
+
+std::string fixedLength(int value, int digits = 3) {
+    unsigned int uvalue = value;
+    if (value < 0) {
+        uvalue = -uvalue;
+    }
+    std::string result;
+    while (digits-- > 0) {
+        result += ('0' + uvalue % 10);
+        uvalue /= 10;
+    }
+    if (value < 0) {
+        result += '-';
+    }
+    std::reverse(result.begin(), result.end());
+    return result;
+}
 
 void readCTS()
 {
@@ -62,6 +83,12 @@ void recordWav()
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #endif
 #endif
+
+	if(!rename("rec.wav",prefix + fixedLength(count++,4) + wav))
+	{
+		exit(1);
+	}
+
 }
 
 void playWav()
@@ -87,6 +114,7 @@ int main(int argc, char* argv[])
 	bool record = argc > 1;
 	if(record)
 	{
+		prefix(argc[2]);
 		std::printf("-- Recording mode --\n");
 	}
 	else

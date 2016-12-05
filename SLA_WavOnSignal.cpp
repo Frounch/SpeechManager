@@ -5,7 +5,6 @@
 // Copyright   : ConnectCom
 // Description : Hello World in C++, Ansi-style
 //============================================================================
-#define _USE_JACK
 #include <iostream>
 
 #include <iostream>
@@ -56,6 +55,7 @@ void readCTS()
 #ifndef PI
 	int gps = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
+	int mask = TIOCM_CTS;
 #endif
 
 	while (1)
@@ -64,6 +64,7 @@ void readCTS()
 #ifdef PI
 		CTS.store(digitalRead(CTS_PIN));
 #else
+		ioctl(gps, TIOCMIWAIT, mask)
 		ioctl(gps, TIOCMGET, &status);
 		CTS.store(status & TIOCM_CTS);
 #endif
@@ -73,21 +74,16 @@ void readCTS()
 
 void recordWav()
 {
-#ifdef _USE_JACK
-	system("jack_capture -c 1 -b 16 -d 5 rec.wav");
-#else
 #ifdef PI
 	system("arecord -D plughw:1 -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #else
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
-#endif
 #endif
 	std::string outputFile =prefix + fixedLength(count,4) + postfix ;
 	if(!rename(,outputFile.c_str))
 	{
 		exit(1);
 	}
-
 }
 
 void playWav()

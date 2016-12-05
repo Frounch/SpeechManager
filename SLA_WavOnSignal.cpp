@@ -33,23 +33,22 @@ using namespace std;
 atomic<bool> CTS;
 std::string prefix("rec-");
 std::string postfix(".wav");
+char*[] inputFile = "rec.wav";
 int count = 0;
 
 std::string fixedLength(int value, int digits = 3) {
-    unsigned int uvalue = value;
-    if (value < 0) {
-        uvalue = -uvalue;
-    }
-    std::string result;
-    while (digits-- > 0) {
-        result += ('0' + uvalue % 10);
-        uvalue /= 10;
-    }
-    if (value < 0) {
-        result += '-';
-    }
-    std::reverse(result.begin(), result.end());
-    return result;
+	std::string result;
+	if (value < 0) 
+	{
+		result += '-';
+		value = -value;
+	}
+	while (digits-- > 0) 
+	{
+		result += ('0' + value % 10);
+		value /= 10;
+	}
+	return result;
 }
 
 void readCTS()
@@ -83,8 +82,8 @@ void recordWav()
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #endif
 #endif
-
-	if(!rename("rec.wav",prefix + fixedLength(count,4) + postfix))
+	std::string outputFile =prefix + fixedLength(count,4) + postfix ;
+	if(!rename(,outputFile.c_str))
 	{
 		exit(1);
 	}
@@ -114,7 +113,6 @@ int main(int argc, char* argv[])
 	bool record = argc > 1;
 	if(record)
 	{
-		prefix(argc[2]);
 		std::printf("-- Recording mode --\n");
 	}
 	else

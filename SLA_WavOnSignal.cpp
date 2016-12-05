@@ -5,7 +5,7 @@
 // Copyright   : ConnectCom
 // Description : Hello World in C++, Ansi-style
 //============================================================================
-#define _USE_JACK
+//#define _USE_JACK
 #include <iostream>
 
 #include <iostream>
@@ -18,6 +18,7 @@
 #include <thread>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 
 #ifdef __arm__
 #define PI
@@ -33,8 +34,8 @@ using namespace std;
 atomic<bool> CTS;
 std::string prefix("rec-");
 std::string postfix(".wav");
-char*[] inputFile = "rec.wav";
-int count = 0;
+char  inputFile[] = "rec.wav";
+int pulseCount = 0;
 
 std::string fixedLength(int value, int digits = 3) {
 	std::string result;
@@ -48,6 +49,8 @@ std::string fixedLength(int value, int digits = 3) {
 		result += ('0' + value % 10);
 		value /= 10;
 	}
+
+	 std::reverse(result.begin(), result.end());
 	return result;
 }
 
@@ -82,9 +85,12 @@ void recordWav()
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #endif
 #endif
-	std::string outputFile =prefix + fixedLength(count,4) + postfix ;
-	if(!rename(,outputFile.c_str))
+	std::string outputFile_str =prefix + fixedLength(pulseCount, 4) + postfix ;
+        char outputFile[50];
+	strcpy(outputFile, outputFile_str.c_str());
+	if(rename(inputFile, outputFile))
 	{
+		printf("could not rename file\n");
 		exit(1);
 	}
 
@@ -141,7 +147,7 @@ int main(int argc, char* argv[])
 				// std::printf("-- Playing sound --\n");
 				playWav();
 			}
-			printf("Pulse #%d - Wait for pulse ...\n", count++);
+			printf("Pulse #%d - Wait for pulse ...\n", pulseCount++);
 		}
 	}
 	return 0;

@@ -31,8 +31,8 @@
 using namespace std;
 
 atomic<bool> CTS;
-std::string prefix;
-std::string wav(".wav");
+std::string prefix("rec-");
+std::string postfix(".wav");
 int count = 0;
 
 std::string fixedLength(int value, int digits = 3) {
@@ -84,7 +84,7 @@ void recordWav()
 #endif
 #endif
 
-	if(!rename("rec.wav",prefix + fixedLength(count++,4) + wav))
+	if(!rename("rec.wav",prefix + fixedLength(count,4) + postfix))
 	{
 		exit(1);
 	}
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 				// std::printf("-- Playing sound --\n");
 				playWav();
 			}
-			printf("Wait for pulse ...\n");
+			printf("Pulse #%d - Wait for pulse ...\n", count++);
 		}
 	}
 	return 0;

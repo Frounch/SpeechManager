@@ -5,12 +5,7 @@
 // Copyright   : ConnectCom
 // Description : Hello World in C++, Ansi-style
 //============================================================================
-<<<<<<< HEAD
-=======
-//#define _USE_JACK
->>>>>>> a42c7de4b7750975fe6be29982d9e4e66ea14611
 #include <iostream>
-
 #include <iostream>
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
@@ -62,7 +57,7 @@ void readCTS()
 #ifndef PI
 	int gps = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
-	int mask = TIOCM_CTS;
+	unsigned int mask = TIOCM_CTS;
 #endif
 
 	while (1)
@@ -71,7 +66,7 @@ void readCTS()
 #ifdef PI
 		CTS.store(digitalRead(CTS_PIN));
 #else
-		ioctl(gps, TIOCMIWAIT, mask)
+		ioctl(gps, TIOCMIWAIT, mask);
 		ioctl(gps, TIOCMGET, &status);
 		CTS.store(status & TIOCM_CTS);
 #endif
@@ -98,15 +93,10 @@ void recordWav()
 
 void playWav()
 {
-#ifdef _USE_JACK
-	system("mcp -l ref.wav");
-	sleep(5000);
-#else
 #ifdef PI
 	system("aplay -D plughw:1,0 -d5 ref.wav");
 #else
 	system("aplay -d5 ref.wav");
-#endif
 #endif
 }
 

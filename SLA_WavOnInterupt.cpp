@@ -34,6 +34,7 @@ std::string prefix("rec-");
 std::string postfix(".wav");
 char  inputFile[] = "rec.wav";
 int pulseCount = 0;
+bool record;
 
 std::string fixedLength(int value, int digits = 3) {
 	std::string result;
@@ -101,7 +102,8 @@ int main(int argc, char* argv[])
 	{
 		cout << "Arg #" << i << ":" << argv[i] << endl;
 	}
-	bool record = argc > 1;
+	record = argc > 1;
+
 	if(record)
 	{
 		std::printf("-- Recording mode --\n");

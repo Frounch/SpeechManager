@@ -23,7 +23,7 @@
 #endif
 
 #ifdef PI
-#define CTS_PIN 7
+#define CTS_PIN 25
 #include <wiringPi.h>
 #endif
 
@@ -56,7 +56,7 @@ std::string fixedLength(int value, int digits = 3) {
 void recordWav()
 {
 #ifdef PI
-	system("arecord -D plughw:1 -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
+	system("arecord -D plughw-1 -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #else
 	system("arecord -f S16_LE -r 8000 -c 1 -t wav -d 5 rec.wav");
 #endif
@@ -73,7 +73,7 @@ void recordWav()
 void playWav()
 {
 #ifdef PI
-	system("aplay -D plughw:1,0 -d5 ref.wav");
+	system("aplay -d5 ref.wav");
 #else
 	system("aplay -d5 ref.wav");
 #endif
@@ -92,6 +92,16 @@ void tick()
 	}
 	printf("Pulse #%d\n", pulseCount++);
 }
+
+#ifdef PI
+void trig()
+{
+	if(digitalRead(CTS_PIN))
+	{
+		tick();
+	}
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -121,8 +131,8 @@ int main(int argc, char* argv[])
 #ifdef PI
 	// Init gpio
 	wiringPiSetup();
-	pinMode(CTS_PIN, INPUT);
-	pullUpDnControl(CTS_PIN, PUD_DOWN);
+//	pinMode(CTS_PIN, INPUT);
+//	pullUpDnControl(CTS_PIN, PUD_DOWN);
 #else
 	// Init serial
 	int gps = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
@@ -140,7 +150,7 @@ int main(int argc, char* argv[])
 
 #ifdef PI
 	// on each rising edge, execute tick
-	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &tick);
+	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &trig);
 	
 	// wait
 	while (1)

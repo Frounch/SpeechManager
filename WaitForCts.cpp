@@ -54,12 +54,19 @@ std::string fixedLength(int value, int digits = 3) {
 
 void readCTS()
 {
+printf("readCTS...\n");
 #ifndef PI
-	int gps = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
+	int gps = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int status;
-	unsigned int mask = TIOCM_CTS;
+	unsigned int mask = TIOCM_CAR | TIOCM_DSR | TIOCM_CTS | TIOCM_RNG;
+	unsigned int rtsFlag = TIOCM_RTS;
+	ioctl(gps, TIOCMBIS, &rtsFlag);
+	sleep(1);
+	ioctl(gps, TIOCMBIC, &rtsFlag);
 #endif
 
+	printf("Reading on port ...\n");
+	sleep(1);
 	while (1)
 	{
 		// Read CTS
@@ -68,7 +75,17 @@ void readCTS()
 #else
 		ioctl(gps, TIOCMIWAIT, mask);
 		ioctl(gps, TIOCMGET, &status);
-		CTS.store(status & TIOCM_CTS);
+		if(status & TIOCM_CTS)
+		{
+			ioctl(gps, TIOCMBIS, &rtsFlag);
+//			printf("-- pulse --\n");
+		}
+		else
+		{
+			ioctl(gps,TIOCMBIC, &rtsFlag);
+//			printf("Waitinf for pulse ...\n");
+		}
+//		CTS.store(status & TIOCM_CTS);
 #endif
 
 	}
@@ -121,8 +138,10 @@ int main(int argc, char* argv[])
 	pullUpDnControl(CTS_PIN, PUD_DOWN);
 #endif
 
-	printf("starting application\n");
+	printf("starting application ...\n");
 	thread getCTS(readCTS);
+	
+	printf("end of readCTS\n");
 
 	while (1)
 	{

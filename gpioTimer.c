@@ -6,13 +6,9 @@
 
 #define Period 15000
 #define Peak     500
-#define CTS_PIN 7
+#define CTS_PIN 25
 
-int count = 1000;
-void sleep(int period)
-{
-	std::this_thread::sleep_for(std::chrono::milliseconds(period));
-}
+int count = 0;
 
 int main(int argc, char *argv[])
 {
@@ -25,13 +21,13 @@ int main(int argc, char *argv[])
 
 	printf("Generating %d pulses every ",count);
 	printf("%d sec\n", Period / 1000);
-	while(count > 0)
+	while(1)
 	{
 		printf("Tick #%d\n",count);
 		digitalWrite(CTS_PIN,1);
-		sleep(Peak);
+		delay(Peak);
 		digitalWrite(CTS_PIN,0);
-		count--;
-		sleep(Period-Peak);
+		count++;
+		delay(Period-Peak);
 	}
 }

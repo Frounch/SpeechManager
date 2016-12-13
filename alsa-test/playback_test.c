@@ -173,6 +173,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, uint32_t duration)
 	}
 
 	uint32_t pcm_data_size = hdr->sample_rate * hdr->bytes_per_frame * (duration / 1000);
+	printf("data_size : %d", pcm_data_size);
 	hdr->file_size = pcm_data_size + 36;
 
 	filedesc = open(fileName, O_WRONLY | O_CREAT, 0644);
@@ -186,6 +187,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, uint32_t duration)
 		return err;
 	}
 	int totalFrames = 0;
+	int length = ((duration * 1000) / (hdr->sample_rate / frames));
+	printf("for length %d", length);
 	for(int i = ((duration * 1000) / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);

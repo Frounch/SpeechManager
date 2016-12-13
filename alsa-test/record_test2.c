@@ -244,7 +244,7 @@ main (int argc, char *argv[])
 	int i;
 	int err;
 	char *buffer;
-	int buff_size, buffer_frames = 128;
+	int buff_size, buffer_frames = 32;
 	unsigned int rate = 44100;
 	snd_pcm_t *capture_handle;
 	snd_pcm_hw_params_t *hw_params;
@@ -331,7 +331,7 @@ main (int argc, char *argv[])
 
 	fprintf(stdout, "audio interface prepared\n");
 
-	buff_size = 128 * snd_pcm_format_width(format) / 8 * 2;
+	buff_size = buffer_frames * snd_pcm_format_width(format) / 8 * 2;
 	buffer = malloc(buff_size);
 
 	fprintf(stdout, "buffer allocated\n");

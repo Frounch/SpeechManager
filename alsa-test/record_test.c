@@ -208,7 +208,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	}
 	while(!(status & TIOCM_CTS));
 
-	for(i = (2 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
+	for(i = (2.5 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
 		totalFrames += err;

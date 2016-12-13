@@ -76,8 +76,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	unsigned int sampleRate = hdr->sample_rate;
 	int dir;
 	snd_pcm_uframes_t frames = 32;
-	const char *device = "plughw:1,0"; // USB microphone
-	// const char *device = "default"; // Integrated system microphone
+	// const char *device = "plughw:1,0"; // USB microphone
+	const char *device = "default"; // Integrated system microphone
 	char *buffer;
 	int filedesc;
 
@@ -176,8 +176,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 		return err;
 	}
 
-	unsigned int pcm_data_size = hdr->sample_rate * hdr->bytes_per_frame * (duration / 1000);
-	printf("data_size : %d", pcm_data_size);
+	unsigned int pcm_data_size = hdr->bytes_per_second * duration;
+	printf("data_size : %d\n", pcm_data_size);
 	hdr->file_size = pcm_data_size + 36;
 
 	filedesc = open(fileName, O_WRONLY | O_CREAT, 0644);
@@ -191,10 +191,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 		return err;
 	}
 	int totalFrames = 0;
-	int length = ((duration * 1000) / (hdr->sample_rate / frames));
-	printf("for length %d", length);
 	int i;
-	for(i = ((duration * 1000) / (hdr->sample_rate / frames)); i > 0; i--)
+	for(i = (duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
 		totalFrames += err;
@@ -236,7 +234,7 @@ int main(int argc, char* argv[])
 	}
 	while(!(status & TIOCM_CTS));
 
-	WaveHeader * hdr = genericWAVHeader(44000, 16, 2);
+	WaveHeader * hdr = genericWAVHeader(8000, 16, 1);
 	char fileName[] = "rec.wav";
-	recordWAV(fileName, hdr, 5000);	
+	recordWAV(fileName, hdr, 5);	
 } 

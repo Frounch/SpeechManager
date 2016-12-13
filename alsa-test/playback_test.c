@@ -43,11 +43,14 @@
 #define PCM_DEVICE "hw:1"
 
 #ifdef PI
-std::condition_variable cv;
+pthread_mutex_t interrupt_mutex;
+pthread_cond_t interrupt_cv;
 
 void interrupt()
 {
-	cv.notify_one();
+	pthread_mutex_lock(&interrupt_mutex);
+	pthread_cond_signal(&interrupt_cv);
+	pthread_mutex_unlock(&interrupt_mutex);
 }
 #endif
 
@@ -69,6 +72,11 @@ int main(int argc, char **argv)
 	}
 
 #ifdef PI
+	/* Initialize mutex and condition variable objects */
+    pthread_mutex_init(&interrupt_mutex, NULL);
+    pthread_cond_init (&interrupt_cv, NULL);
+	pthread_mutex_lock(&interrupt_mutex);
+	
 	// Init GPIO
 	wiringPiSetup();
 	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
@@ -144,8 +152,8 @@ int main(int argc, char **argv)
 #ifdef PI
 		// wait for the interrupt
 		{
-			std::unique_lock<std::mutex> lk(m);
-			cv.wait(lk);
+			pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
+			pthread_mutex_unlock(&interrupt_mutex);
 		}
 #else
 		do

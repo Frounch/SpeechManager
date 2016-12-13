@@ -319,6 +319,13 @@ main (int argc, char *argv[])
 
 	fprintf(stdout, "hw_params setted\n");
 	
+	int frames;	
+	if ((err = snd_pcm_hw_params_get_period_size(hw_params, &frames, 0) < 0) {
+        fprintf(stderr, "Error retrieving period size: %s\n", snd_strerror(err));
+        snd_pcm_close(handle);
+		exit (1);
+	}
+
 	snd_pcm_hw_params_free (hw_params);
 
 	fprintf(stdout, "hw_params freed\n");
@@ -331,12 +338,6 @@ main (int argc, char *argv[])
 
 	fprintf(stdout, "audio interface prepared\n");
 
-	int frames;	
-	if ((err = snd_pcm_hw_params_get_period_size(params, &frames, &dir) < 0) {
-        fprintf(stderr, "Error retrieving period size: %s\n", snd_strerror(err));
-        snd_pcm_close(handle);
-		exit (1);
-	}
 
 	buff_size = frames * hdr->bytes_per_frame;
 	buffer = malloc(buff_size);

@@ -193,7 +193,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	int totalFrames = 0;
 	int length = ((duration * 1000) / (hdr->sample_rate / frames));
 	printf("for length %d", length);
-	for(int i = ((duration * 1000) / (hdr->sample_rate / frames)); i > 0; i--)
+	int i;
+	for(i = ((duration * 1000) / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
 		totalFrames += err;

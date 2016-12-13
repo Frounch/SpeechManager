@@ -98,8 +98,11 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	unsigned int sampleRate = hdr->sample_rate;
 	int dir;
 	snd_pcm_uframes_t frames = 32;
-	// const char *device = "plughw:1,0"; // USB microphone
+#ifdef PI
+	const char *device = "hw:1"; // USB
+#else
 	const char *device = "default"; // Integrated system microphone
+#endif
 	char *buffer;
 	int filedesc;
 

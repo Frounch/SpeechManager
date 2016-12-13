@@ -23,13 +23,33 @@
 
 #include <alsa/asoundlib.h>
 #include <stdio.h>
+
+#ifdef __arm__
+#define PI
+#endif
+
+#ifdef PI
+#define CTS_PIN 25
+#include <wiringPi.h>
+#include <condition_variable>
+#else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
 #include <unistd.h>      /* UNIX Standard Definitions          */
 #include <errno.h>       /* ERROR Number Definitions           */
 #include <sys/ioctl.h>   /* ioctl() */
+#endif
 
-#define PCM_DEVICE "default"
+#define PCM_DEVICE "hw:1"
+
+#ifdef PI
+std::condition_variable cv;
+
+void interrupt()
+{
+	cv.notify_one();
+}
+#endif
 
 int main(int argc, char **argv) {
 	unsigned int pcm, tmp, dir;
@@ -46,11 +66,17 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+#ifdef PI
+	// Init GPIO
+	wiringPiSetup();
+	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
+#else
 	// Init serial
 	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
 	unsigned int mask = TIOCM_CTS;
-	
+#end
+
 	rate 	 = atoi(argv[1]);
 	channels = atoi(argv[2]);
 	seconds  = atoi(argv[3]);
@@ -113,15 +139,23 @@ int main(int argc, char **argv) {
 
 		snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
 		
+#ifdef PI
+		// wait for the interrupt
+		{
+			std::unique_lock<std::mutex> lk(m);
+			cv.wait(lk);
+		}
+#else
 		do
 		{
 			// Wait for CTS change
 			ioctl(serial, TIOCMIWAIT, mask);
-			
+		
 			// Read CTS state
 			ioctl(serial, TIOCMGET, &status);
 		}
 		while(!(status & TIOCM_CTS));
+#endif
 		
 		for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) 
 		{

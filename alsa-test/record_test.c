@@ -2,11 +2,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifdef __arm__
+#define PI
+#endif
+
+#ifdef PI
+#define CTS_PIN 25
+#include <wiringPi.h>
+#include <condition_variable>
+#else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
 #include <unistd.h>      /* UNIX Standard Definitions          */
 #include <errno.h>       /* ERROR Number Definitions           */
 #include <sys/ioctl.h>   /* ioctl() */
+#endif
+
+#ifdef PI
+std::condition_variable cv;
+#endif
 
 typedef struct
 {
@@ -67,6 +82,13 @@ int writeWAVHeader(int fd, WaveHeader *hdr)
 	return 0;
 }
 
+#ifdef PI
+void interrupt()
+{
+	cv.notify_one();
+}
+#endif
+
 int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 {
 	int err;
@@ -81,11 +103,16 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	char *buffer;
 	int filedesc;
 
+#ifdef PI
+	// Init GPIO
+	wiringPiSetup();
+	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
+#else
 	// Init serial
 	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
 	unsigned int mask = TIOCM_CTS;
-
+#end
 	/* Open PCM device for recording (capture). */
 	err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0);
 	if (err)
@@ -198,6 +225,13 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	int totalFrames = 0;
 	int i;
 
+#ifdef PI
+	// wait for the interrupt
+    {
+        std::unique_lock<std::mutex> lk(m);
+        cv.wait(lk);
+    }
+#else
 	do
 	{
 		// Wait for CTS change
@@ -207,6 +241,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 		ioctl(serial, TIOCMGET, &status);
 	}
 	while(!(status & TIOCM_CTS));
+#endif
 
 	for(i = (2.5 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
@@ -230,8 +265,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	snd_pcm_drain(handle);
 	snd_pcm_close(handle);
 	free(buffer);
-	return 0;
 }
+	return 0;
 
 int main(int argc, char* argv[])
 {

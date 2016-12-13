@@ -31,7 +31,7 @@
 #ifdef PI
 #define CTS_PIN 25
 #include <wiringPi.h>
-#include <condition_variable>
+//#include <condition_variable>
 #else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
@@ -40,7 +40,7 @@
 #include <sys/ioctl.h>   /* ioctl() */
 #endif
 
-#define PCM_DEVICE "hw:1"
+#define PCM_DEVICE "plughw:1"
 
 #ifdef PI
 pthread_mutex_t interrupt_mutex;
@@ -48,6 +48,7 @@ pthread_cond_t interrupt_cv;
 
 void interrupt()
 {
+	printf("--Interrupt--\n");
 	pthread_mutex_lock(&interrupt_mutex);
 	pthread_cond_signal(&interrupt_cv);
 	pthread_mutex_unlock(&interrupt_mutex);
@@ -73,10 +74,10 @@ int main(int argc, char **argv)
 
 #ifdef PI
 	/* Initialize mutex and condition variable objects */
-    pthread_mutex_init(&interrupt_mutex, NULL);
-    pthread_cond_init (&interrupt_cv, NULL);
+        pthread_mutex_init(&interrupt_mutex, NULL);
+        pthread_cond_init (&interrupt_cv, NULL);
 	pthread_mutex_lock(&interrupt_mutex);
-	
+
 	// Init GPIO
 	wiringPiSetup();
 	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
@@ -139,8 +140,6 @@ int main(int argc, char **argv)
 
 	printf("seconds: %d\n", seconds);	
 
-	while(1)
-	{
 		/* Allocate buffer to hold single period */
 		snd_pcm_hw_params_get_period_size(params, &frames, 0);
 
@@ -148,10 +147,11 @@ int main(int argc, char **argv)
 		buff = (char *) malloc(buff_size);
 
 		snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
-		
+
 #ifdef PI
 		// wait for the interrupt
 		{
+			printf("Wait for interrupt\n");
 			pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
 			pthread_mutex_unlock(&interrupt_mutex);
 		}
@@ -160,13 +160,13 @@ int main(int argc, char **argv)
 		{
 			// Wait for CTS change
 			ioctl(serial, TIOCMIWAIT, mask);
-		
+
 			// Read CTS state
 			ioctl(serial, TIOCMGET, &status);
 		}
 		while(!(status & TIOCM_CTS));
 #endif
-		
+printf("Playing file ... \n");
 		for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) 
 		{
 			if (pcm = read(0, buff, buff_size) == 0) {
@@ -183,12 +183,11 @@ int main(int argc, char **argv)
 				printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
 			}
 		}
-		
-		
+
 		snd_pcm_drain(pcm_handle);
 		snd_pcm_rewind(pcm_handle, frames);
-		snd_pcm_close(pcm_handle);
-	}
+	snd_pcm_close(pcm_handle);
+
 	free(buff);
 
 	return 0;

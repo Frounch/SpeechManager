@@ -323,7 +323,7 @@ main (int argc, char *argv[])
 	if (err = snd_pcm_hw_params_get_period_size(hw_params, &frames, 0) < 0) 
 	{
         fprintf(stderr, "Error retrieving period size: %s\n", snd_strerror(err));
-        snd_pcm_close(handle);
+        snd_pcm_close(capture_handle);
 		exit (1);
 	}
 

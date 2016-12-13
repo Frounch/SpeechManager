@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "wav.h"
 
 typedef struct
 {
@@ -19,7 +18,7 @@ typedef struct
     unsigned short bits_per_sample;
 } WaveHeader;
 
-WaveHeader *genericWAVHeader(uint32_t sample_rate, uint16_t bit_depth, uint16_t channels)
+WaveHeader *genericWAVHeader(unsigned int sample_rate, unsigned short bit_depth, unsigned short channels)
 {
 	WaveHeader *hdr;
 	hdr = malloc(sizeof(*hdr));
@@ -57,13 +56,13 @@ int writeWAVHeader(int fd, WaveHeader *hdr)
 	write(fd, &hdr->bits_per_sample, 2);
 	write(fd, "data", 4);
 
-	uint32_t data_size = hdr->file_size - 36;
+	unsigned int data_size = hdr->file_size - 36;
 	write(fd, &data_size, 4);
 
 	return 0;
 }
 
-int recordWAV(const char *fileName, WaveHeader *hdr, uint32_t duration)
+int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 {
 	int err;
 	int size;
@@ -172,7 +171,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, uint32_t duration)
 		return err;
 	}
 
-	uint32_t pcm_data_size = hdr->sample_rate * hdr->bytes_per_frame * (duration / 1000);
+	unsigned int pcm_data_size = hdr->sample_rate * hdr->bytes_per_frame * (duration / 1000);
 	printf("data_size : %d", pcm_data_size);
 	hdr->file_size = pcm_data_size + 36;
 

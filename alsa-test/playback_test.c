@@ -51,7 +51,8 @@ void interrupt()
 }
 #endif
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) 
+{
 	unsigned int pcm, tmp, dir;
 	int rate, channels, seconds;
 	snd_pcm_t *pcm_handle;
@@ -60,7 +61,8 @@ int main(int argc, char **argv) {
 	char *buff;
 	int buff_size, loops;
 
-	if (argc < 4) {
+	if (argc < 4) 
+	{
 		printf("Usage: %s <sample_rate> <channels> <seconds>\n",
 		argv[0]);
 		return -1;
@@ -75,7 +77,7 @@ int main(int argc, char **argv) {
 	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
 	unsigned int mask = TIOCM_CTS;
-#end
+#endif
 
 	rate 	 = atoi(argv[1]);
 	channels = atoi(argv[2]);

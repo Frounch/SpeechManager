@@ -244,14 +244,14 @@ main (int argc, char *argv[])
 	int i;
 	int err;
 	char *buffer;
-	int buff_size, buffer_frames = 32;
-	unsigned int rate = 44100;
+	int buff_size, buffer_frames = 128;
+	unsigned int rate = 16000;
 	snd_pcm_t *capture_handle;
 	snd_pcm_hw_params_t *hw_params;
 	snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
 
 	char fileName[] = "rec.wav";
-	WaveHeader * hdr = genericWAVHeader(44100, 16, 2);
+	WaveHeader * hdr = genericWAVHeader(16000, 16, 2);
 	int filedesc;
 
 	if ((err = snd_pcm_open (&capture_handle, argv[1], SND_PCM_STREAM_CAPTURE, 0)) < 0) {
@@ -331,7 +331,14 @@ main (int argc, char *argv[])
 
 	fprintf(stdout, "audio interface prepared\n");
 
-	buff_size = buffer_frames * snd_pcm_format_width(format) / 8 * 2;
+	int frames;	
+	if ((err = snd_pcm_hw_params_get_period_size(params, &frames, &dir) < 0) {
+        fprintf(stderr, "Error retrieving period size: %s\n", snd_strerror(err));
+        snd_pcm_close(handle);
+		exit (1);
+	}
+
+	buff_size = frames * hdr->bytes_per_frame;
 	buffer = malloc(buff_size);
 
 	fprintf(stdout, "buffer allocated\n");
@@ -339,8 +346,8 @@ main (int argc, char *argv[])
 	filedesc = open(fileName, O_WRONLY | O_CREAT, 0644);
     writeWAVHeader(filedesc, hdr);
 
-	for (i = 0; i < 1000; ++i) {
-		if ((err = snd_pcm_readi (capture_handle, buffer, buffer_frames)) != buffer_frames) {
+	for (i = 0; i < 10000; ++i) {
+		if ((err = snd_pcm_readi (capture_handle, buffer, buff_size)) != buff_size) {
 			fprintf (stderr, "read from audio interface failed (%s)\n",
 			err, snd_strerror (err));
 			exit (1);

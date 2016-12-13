@@ -235,7 +235,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 
 int main(int argc, char* argv[])
 {
-	WaveHeader * hdr = genericWAVHeader(8000, 16, 1);
+	WaveHeader * hdr = genericWAVHeader(8000, 16, 2);
 	char fileName[] = "rec.wav";
 	recordWAV(fileName, hdr, 5);	
 } 

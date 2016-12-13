@@ -182,7 +182,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	}
 
 	unsigned int pcm_data_size = hdr->bytes_per_second * duration;
-	printf("data_size : %d\n", pcm_data_size);
+	//printf("data_size : %d\n", pcm_data_size);
 	hdr->file_size = pcm_data_size + 36;
 
 	filedesc = open(fileName, O_WRONLY | O_CREAT, 0644);
@@ -208,7 +208,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	}
 	while(!(status & TIOCM_CTS));
 
-	for(i = (duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
+	for(i = (2 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
 		totalFrames += err;
@@ -235,7 +235,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 
 int main(int argc, char* argv[])
 {
-	WaveHeader * hdr = genericWAVHeader(8000, 16, 2);
+	WaveHeader * hdr = genericWAVHeader(8000, 16, 1);
 	char fileName[] = "rec.wav";
 	recordWAV(fileName, hdr, 5);	
 } 

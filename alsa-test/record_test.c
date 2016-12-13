@@ -81,6 +81,11 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	char *buffer;
 	int filedesc;
 
+	// Init serial
+	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
+	int status;
+	unsigned int mask = TIOCM_CTS;
+
 	/* Open PCM device for recording (capture). */
 	err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0);
 	if (err)
@@ -192,6 +197,17 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	}
 	int totalFrames = 0;
 	int i;
+
+	do
+	{
+		// Wait for CTS change
+		ioctl(serial, TIOCMIWAIT, mask);
+		
+		// Read CTS state
+		ioctl(serial, TIOCMGET, &status);
+	}
+	while(!(status & TIOCM_CTS));
+
 	for(i = (duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
@@ -219,21 +235,6 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 
 int main(int argc, char* argv[])
 {
-	// Init serial
-	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
-	int status;
-	unsigned int mask = TIOCM_CTS;
-	
-	do
-	{
-		// Wait for CTS change
-		ioctl(serial, TIOCMIWAIT, mask);
-		
-		// Read CTS state
-		ioctl(serial, TIOCMGET, &status);
-	}
-	while(!(status & TIOCM_CTS));
-
 	WaveHeader * hdr = genericWAVHeader(8000, 16, 1);
 	char fileName[] = "rec.wav";
 	recordWAV(fileName, hdr, 5);	

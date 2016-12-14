@@ -31,7 +31,6 @@
 #ifdef PI
 #define CTS_PIN 25
 #include <wiringPi.h>
-//#include <condition_variable>
 #else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
@@ -46,8 +45,14 @@
 pthread_mutex_t interrupt_mutex;
 pthread_cond_t interrupt_cv;
 
+int flag = 0;
 void interrupt()
 {
+	if(flag)
+	{
+		return;
+	}
+	flag++;
 	printf("--Interrupt--\n");
 	pthread_mutex_lock(&interrupt_mutex);
 	pthread_cond_signal(&interrupt_cv);
@@ -74,8 +79,8 @@ int main(int argc, char **argv)
 
 #ifdef PI
 	/* Initialize mutex and condition variable objects */
-        pthread_mutex_init(&interrupt_mutex, NULL);
-        pthread_cond_init (&interrupt_cv, NULL);
+    pthread_mutex_init(&interrupt_mutex, NULL);
+    pthread_cond_init (&interrupt_cv, NULL);
 	pthread_mutex_lock(&interrupt_mutex);
 
 	// Init GPIO
@@ -131,61 +136,65 @@ int main(int argc, char **argv)
 	printf("channels: %i ", tmp);
 
 	if (tmp == 1)
-	printf("(mono)\n");
+	{
+		printf("(mono)\n");
+	}
 	else if (tmp == 2)
-	printf("(stereo)\n");
+	{
+		printf("(stereo)\n");
+	}
 
 	snd_pcm_hw_params_get_rate(params, &tmp, 0);
 	printf("rate: %d bps\n", tmp);
 
 	printf("seconds: %d\n", seconds);	
 
-		/* Allocate buffer to hold single period */
-		snd_pcm_hw_params_get_period_size(params, &frames, 0);
+	/* Allocate buffer to hold single period */
+	snd_pcm_hw_params_get_period_size(params, &frames, 0);
 
-		buff_size = frames * channels * 2 /* 2 -> sample size */;
-		buff = (char *) malloc(buff_size);
+	buff_size = frames * channels * 2 /* 2 -> sample size */;
+	buff = (char *) malloc(buff_size);
 
-		snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
+	snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
 
 #ifdef PI
-		// wait for the interrupt
-		{
-			printf("Wait for interrupt\n");
-			pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
-			pthread_mutex_unlock(&interrupt_mutex);
-		}
+	// wait for the interrupt
+	printf("Wait for interrupt\n");
+	pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
+	pthread_mutex_unlock(&interrupt_mutex);
+	
 #else
-		do
-		{
-			// Wait for CTS change
-			ioctl(serial, TIOCMIWAIT, mask);
-
-			// Read CTS state
-			ioctl(serial, TIOCMGET, &status);
-		}
-		while(!(status & TIOCM_CTS));
+	do
+	{
+		// Wait for CTS change
+		ioctl(serial, TIOCMIWAIT, mask);
+    
+		// Read CTS state
+		ioctl(serial, TIOCMGET, &status);
+	}
+	while(!(status & TIOCM_CTS));
 #endif
-printf("Playing file ... \n");
-		for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) 
+	printf("Playing file ... \n");
+	for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) 
+	{
+		if (pcm = read(0, buff, buff_size) == 0) 
 		{
-			if (pcm = read(0, buff, buff_size) == 0) {
-				printf("Early end of file.\n");
-				return 0;
-			}
-
-			if (pcm = snd_pcm_writei(pcm_handle, buff, frames) == -EPIPE) 
-			{
-				printf("XRUN.\n");
-				snd_pcm_prepare(pcm_handle);
-			} else if (pcm < 0) 
-			{
-				printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
-			}
+			printf("Early end of file.\n");
+			return 0;
 		}
 
-		snd_pcm_drain(pcm_handle);
-		snd_pcm_rewind(pcm_handle, frames);
+		if (pcm = snd_pcm_writei(pcm_handle, buff, frames) == -EPIPE) 
+		{
+			printf("XRUN.\n");
+			snd_pcm_prepare(pcm_handle);
+		} else if (pcm < 0) 
+		{
+			printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
+		}
+	}
+
+	snd_pcm_drain(pcm_handle);
+	snd_pcm_rewind(pcm_handle, frames);
 	snd_pcm_close(pcm_handle);
 
 	free(buff);

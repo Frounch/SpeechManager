@@ -10,7 +10,6 @@
 #ifdef PI
 #define CTS_PIN 25
 #include <wiringPi.h>
-#include <condition_variable>
 #else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
@@ -20,7 +19,22 @@
 #endif
 
 #ifdef PI
-std::condition_variable cv;
+pthread_mutex_t interrupt_mutex;
+pthread_cond_t interrupt_cv;
+
+int flag = 0;
+void interrupt()
+{
+	if(flag)
+	{
+		return;
+	}
+	flag++;
+	printf("--Interrupt--\n");
+	pthread_mutex_lock(&interrupt_mutex);
+	pthread_cond_signal(&interrupt_cv);
+	pthread_mutex_unlock(&interrupt_mutex);
+}
 #endif
 
 typedef struct
@@ -82,13 +96,6 @@ int writeWAVHeader(int fd, WaveHeader *hdr)
 	return 0;
 }
 
-#ifdef PI
-void interrupt()
-{
-	cv.notify_one();
-}
-#endif
-
 int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 {
 	int err;
@@ -107,6 +114,11 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	int filedesc;
 
 #ifdef PI
+	/* Initialize mutex and condition variable objects */
+    pthread_mutex_init(&interrupt_mutex, NULL);
+    pthread_cond_init (&interrupt_cv, NULL);
+	pthread_mutex_lock(&interrupt_mutex);
+
 	// Init GPIO
 	wiringPiSetup();
 	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
@@ -230,10 +242,9 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 
 #ifdef PI
 	// wait for the interrupt
-    {
-        std::unique_lock<std::mutex> lk(m);
-        cv.wait(lk);
-    }
+	printf("Wait for interrupt\n");
+	pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
+	pthread_mutex_unlock(&interrupt_mutex);
 #else
 	do
 	{

@@ -127,7 +127,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
 	unsigned int mask = TIOCM_CTS;
-#end
+#endif
 	/* Open PCM device for recording (capture). */
 	err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0);
 	if (err)

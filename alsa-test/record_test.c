@@ -279,8 +279,8 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	snd_pcm_drain(handle);
 	snd_pcm_close(handle);
 	free(buffer);
-}
 	return 0;
+}
 
 int main(int argc, char* argv[])
 {

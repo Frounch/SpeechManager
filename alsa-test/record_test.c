@@ -2,11 +2,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifdef __arm__
+#define PI
+#endif
+
+#ifdef PI
+#define CTS_PIN 25
+#include <wiringPi.h>
+#else
 #include <fcntl.h>       /* File Control Definitions           */
 #include <termios.h>     /* POSIX Terminal Control Definitions */
 #include <unistd.h>      /* UNIX Standard Definitions          */
 #include <errno.h>       /* ERROR Number Definitions           */
 #include <sys/ioctl.h>   /* ioctl() */
+#endif
+
+#ifdef PI
+pthread_mutex_t interrupt_mutex;
+pthread_cond_t interrupt_cv;
+
+int flag = 0;
+void interrupt()
+{
+	if(flag)
+	{
+		return;
+	}
+	flag++;
+	printf("--Interrupt--\n");
+	pthread_mutex_lock(&interrupt_mutex);
+	pthread_cond_signal(&interrupt_cv);
+	pthread_mutex_unlock(&interrupt_mutex);
+}
+#endif
 
 typedef struct
 {
@@ -76,16 +105,29 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	unsigned int sampleRate = hdr->sample_rate;
 	int dir;
 	snd_pcm_uframes_t frames = 32;
-	// const char *device = "plughw:1,0"; // USB microphone
+#ifdef PI
+	const char *device = "hw:1"; // USB
+#else
 	const char *device = "default"; // Integrated system microphone
+#endif
 	char *buffer;
 	int filedesc;
 
+#ifdef PI
+	/* Initialize mutex and condition variable objects */
+    pthread_mutex_init(&interrupt_mutex, NULL);
+    pthread_cond_init (&interrupt_cv, NULL);
+	pthread_mutex_lock(&interrupt_mutex);
+
+	// Init GPIO
+	wiringPiSetup();
+	wiringPiISR (CTS_PIN, INT_EDGE_RISING, &interrupt);
+#else
 	// Init serial
 	int serial = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
 	int status;
 	unsigned int mask = TIOCM_CTS;
-
+#endif
 	/* Open PCM device for recording (capture). */
 	err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0);
 	if (err)
@@ -198,6 +240,12 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	int totalFrames = 0;
 	int i;
 
+#ifdef PI
+	// wait for the interrupt
+	printf("Wait for interrupt\n");
+	pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
+	pthread_mutex_unlock(&interrupt_mutex);
+#else
 	do
 	{
 		// Wait for CTS change
@@ -208,6 +256,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 		usleep(4550);
 	}
 	while(!(status & TIOCM_CTS));
+#endif
 
 	for(i = (2.5 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{

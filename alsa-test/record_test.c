@@ -205,6 +205,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 		
 		// Read CTS state
 		ioctl(serial, TIOCMGET, &status);
+		usleep(4550);
 	}
 	while(!(status & TIOCM_CTS));
 

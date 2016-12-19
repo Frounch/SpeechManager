@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 		system("./record_test");
 
 		// Rename file
-		std::string outputFile_str = prefix + fixedLength(pulseCount, 4) + postfix;
+		std::string outputFile_str = prefix + fixedLength(pulseCount, 6) + postfix;
 		char outputFile[50];
 		strcpy(outputFile, outputFile_str.c_str());
 		if(rename(inputFile, outputFile))

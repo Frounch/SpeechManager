@@ -30,7 +30,7 @@ void interrupt()
 		return;
 	}
 	flag++;
-	printf("--Interrupt--\n");
+	//printf("--Interrupt--\n");
 	pthread_mutex_lock(&interrupt_mutex);
 	pthread_cond_signal(&interrupt_cv);
 	pthread_mutex_unlock(&interrupt_mutex);
@@ -246,18 +246,19 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 	pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
 	pthread_mutex_unlock(&interrupt_mutex);
 #else
+	printf("Wait for interrupt\n");
 	do
 	{
 		// Wait for CTS change
 		ioctl(serial, TIOCMIWAIT, mask);
-		
+
 		// Read CTS state
 		ioctl(serial, TIOCMGET, &status);
 		usleep(4550);
 	}
 	while(!(status & TIOCM_CTS));
 #endif
-
+	printf("recording...\n");
 	for(i = (2.5 * duration * 1000 / (hdr->sample_rate / frames)); i > 0; i--)
 	{
 		err = snd_pcm_readi(handle, buffer, frames);
@@ -285,7 +286,7 @@ int recordWAV(const char *fileName, WaveHeader *hdr, unsigned int duration)
 
 int main(int argc, char* argv[])
 {
-	WaveHeader * hdr = genericWAVHeader(8000, 16, 1);
+	WaveHeader * hdr = genericWAVHeader(16000, 16, 1);
 	char fileName[] = "rec.wav";
-	recordWAV(fileName, hdr, 5);	
-} 
+	recordWAV(fileName, hdr, 5);
+}

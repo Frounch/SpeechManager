@@ -10,12 +10,12 @@ int pulseCount = 0;
 
 std::string fixedLength(int value, int digits = 3) {
 	std::string result;
-	if (value < 0) 
+	if (value < 0)
 	{
 		result += '-';
 		value = -value;
 	}
-	while (digits-- > 0) 
+	while (digits-- > 0)
 	{
 		result += ('0' + value % 10);
 		value /= 10;

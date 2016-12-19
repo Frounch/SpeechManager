@@ -39,7 +39,7 @@
 #include <sys/ioctl.h>   /* ioctl() */
 #endif
 
-#define PCM_DEVICE "plughw:1"
+#define PCM_DEVICE "default"
 
 #ifdef PI
 pthread_mutex_t interrupt_mutex;
@@ -53,7 +53,7 @@ void interrupt()
 		return;
 	}
 	flag++;
-	printf("--Interrupt--\n");
+	// printf("--Interrupt--\n");
 	pthread_mutex_lock(&interrupt_mutex);
 	pthread_cond_signal(&interrupt_cv);
 	pthread_mutex_unlock(&interrupt_mutex);
@@ -128,26 +128,26 @@ int main(int argc, char **argv)
 	printf("ERROR: Can't set harware parameters. %s\n", snd_strerror(pcm));
 
 	/* Resume information */
-	printf("PCM name: '%s'\n", snd_pcm_name(pcm_handle));
+	//printf("PCM name: '%s'\n", snd_pcm_name(pcm_handle));
 
-	printf("PCM state: %s\n", snd_pcm_state_name(snd_pcm_state(pcm_handle)));
+	//printf("PCM state: %s\n", snd_pcm_state_name(snd_pcm_state(pcm_handle)));
 
 	snd_pcm_hw_params_get_channels(params, &tmp);
-	printf("channels: %i ", tmp);
+	//printf("channels: %i ", tmp);
 
-	if (tmp == 1)
-	{
-		printf("(mono)\n");
-	}
-	else if (tmp == 2)
-	{
-		printf("(stereo)\n");
-	}
+	//if (tmp == 1)
+	//{
+	//	printf("(mono)\n");
+	//}
+	//else if (tmp == 2)
+	//{
+	//	printf("(stereo)\n");
+	//}
 
 	snd_pcm_hw_params_get_rate(params, &tmp, 0);
-	printf("rate: %d bps\n", tmp);
+	//printf("rate: %d bps\n", tmp);
 
-	printf("seconds: %d\n", seconds);	
+	//printf("seconds: %d\n", seconds);	
 
 	/* Allocate buffer to hold single period */
 	snd_pcm_hw_params_get_period_size(params, &frames, 0);
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 
 #ifdef PI
 	// wait for the interrupt
-	printf("Wait for interrupt\n");
+	//printf("Wait for interrupt\n");
 	pthread_cond_wait(&interrupt_cv, &interrupt_mutex);
 	pthread_mutex_unlock(&interrupt_mutex);
 	
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	}
 	while(!(status & TIOCM_CTS));
 #endif
-	printf("Playing file ... \n");
+	//printf("Playing file ... \n");
 	for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) 
 	{
 		if (pcm = read(0, buff, buff_size) == 0) 
